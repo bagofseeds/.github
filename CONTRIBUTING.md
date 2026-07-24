@@ -1,14 +1,27 @@
 # Contributing to bagofseeds
 
-bagofseeds hosts **[`fiery`](https://bagofseeds.github.io/fiery/)** — a
-namespace package of small, single-purpose PyTorch utilities. Each utility is a
-"**match**": it installs on its own, depends on as little as possible (`torch`,
-other `fiery` matches when useful, well-known packages only when necessary), and
-imports under the shared `fiery.` namespace. Matches are re-organized forks of
-the `torch-*` packages published under
-[`balbasty`](https://github.com/balbasty).
+bagofseeds publishes two families of PyTorch packages:
 
-Repositories:
+- **`bagof-*`** — standalone packages, each installin
+- **[`bagof`](https://bagofseeds.github.io/bagof/)** — a namespace package of
+  small, single-purpose utilities. Each utility is a "**bag**": it installs on
+  its own, depends on as little as possible (other `bagof` packages when
+  useful, well-known packages only when necessary), and imports under the shared
+  `bagof.` namespace.
+- **[`fiery`](https://bagofseeds.github.io/fiery/)** — a namespace package of
+  small, single-purpose utilities. Each utility is a "**match**": it installs on
+  its own, depends on as little as possible (`torch`, other `fiery` matches when
+  useful, well-known packages only when necessary), and imports under the shared
+  `fiery.` namespace. The initial matches are re-organized forks of the `torch-*`
+  packages published under [`balbasty`](https://github.com/balbasty). Future
+  matches will start their life directly under fiery.
+
+Both families share the same workflow, packaging, CI, and docs conventions
+(below), but **differ in their supported Python/PyTorch spans and in how they
+use annotations** — see *Coding style*. When guidance below differs by family
+it says so; otherwise it applies to both.
+
+`fiery` repositories:
 
 ```
 fiery              the umbrella / landing page (https://bagofseeds.github.io/fiery/)
@@ -117,28 +130,41 @@ codespell src tests
 
 ## Coding style (Python)
 
-- **PEP 420 native namespace package.** No match ships `fiery/__init__.py`; each
-  ships only its `src/fiery/<name>/` subpackage with
+- **Namespace layout.** `fiery` and `bagof` packages are **PEP 420 native namespace
+  packages** — no package ships `<fiery|bagof>/__init__.py`; each ships only its
+  `src/<fiery|bagof>/<name>/` subpackage with
   `[tool.setuptools.packages.find] namespaces = true`, so the distributions
-  merge into one `fiery` import root.
+  merge into one import root.
 - **NumPy-style docstrings** and **type annotations** on every public function.
-- **`from __future__ import annotations`** at the top of every module.
-- **Wide version support.** Matches target a broad range of Python and PyTorch:
-  - Keep *runtime-evaluated* code old-compatible (no PEP 695 `type` statements,
-    no walrus in code that must run on old Pythons, no `zip(strict=)`, no PEP
-    604 `|` / PEP 585 `list[...]` in **values**). Put modern typing in
-    **annotations only** — they are lazy strings thanks to
-    `from __future__ import annotations` — and build runtime type aliases from
-    `typing` generics. Import backported names (`Self`, `Literal`, `Final`, …)
-    from `typing_extensions`.
-  - When overriding or calling PyTorch functions that may not exist in every
-    supported torch version, **guard by feature detection** so the package still
-    imports where the op is absent — never register an override for a function
-    that isn't there.
-- **Ruff** (`line-length = 79`, `select = ["B","E","F","I","W"]`,
-  `format.quote-style = "preserve"`) — `ruff check` clean and `ruff format`-ed.
-  The standard `ignore` is `["B905","B007","E731"]`.
-- **codespell** clean (`[tool.codespell]` in `pyproject.toml`).
+- **Typing goes through `typing_extensions`** (imported `as tx`, cf.
+  `bagof-hints`): don't mix `typing` / `collections.abc` / `tx`, and never
+  subscript an abc/builtin generic at runtime (`collections.abc.Sequence[...]`
+  is not subscriptable before 3.9).
+- **Version span & annotations — this differs by family, do not copy blindly:**
+  - **`fiery-*`** targets a wide span (down to old Pythons) and relies on
+    **`from __future__ import annotations`** so annotations are lazy strings.
+    That is what lets modern typing appear in signatures on old interpreters;
+    the price is that only *runtime-evaluated* code (type aliases, defaults)
+    must stay old-compatible — no PEP 695 `type` statements, no walrus, no
+    `zip(strict=)`, no runtime PEP 604 `|` / PEP 585 `list[...]`. Build runtime
+    aliases from `tx.*`.
+  - **`bagof-*`** may **use annotations at runtime** (introspection,
+    dataclasses, validators). There, `from __future__ import annotations` can be
+    **incompatible** and its supported version span is different — follow that
+    repo's own policy (its `requires-python` and `CLAUDE.md`); do **not** impose
+    the fiery lazy-annotation approach on it.
+  - Either way, the concrete supported versions are declared per repo in
+    `pyproject.toml` (`requires-python`, trove `classifiers`) and exercised by
+    that repo's CI matrix — treat those as the source of truth.
+- **Guard PyTorch ops by feature detection.** When overriding or calling torch
+  functions that may not exist in every supported torch version, detect them
+  first so the package still imports where the op is absent — never register an
+  override for a function that isn't there.
+- **Lint/format/spelling config lives in each repo's `pyproject.toml`**
+  (`[tool.ruff]`, `[tool.ruff.format]`, `[tool.ruff.lint]`, `[tool.codespell]`).
+  Don't restate the values here or hard-code them in workflows — read them from
+  `pyproject.toml`. The gate is simply: `ruff check` clean, `ruff format`-ed,
+  `codespell` clean.
 - `snake_case` for functions/variables, `_`-prefixed names are internal.
 - Match the surrounding code's comment density and idiom. Comments explain
   *why*, not what an obvious line does.
