@@ -2,7 +2,6 @@
 
 bagofseeds publishes two families of PyTorch packages:
 
-- **`bagof-*`** — standalone packages, each installin
 - **[`bagof`](https://bagofseeds.github.io/bagof/)** — a namespace package of
   small, single-purpose utilities. Each utility is a "**bag**": it installs on
   its own, depends on as little as possible (other `bagof` packages when
