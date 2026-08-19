@@ -25,3 +25,9 @@ when useful, and well-known external packages only when necessary). Each
 match imports under the shared `fiery.` namespace.
 
 📖 **[Documentation](https://bagofseeds.github.io/fiery/)**
+
+## contributing
+
+> [!NOTE]
+> Repositories under this organisation are in very early development.
+> External contributions are not welcome at this time.
